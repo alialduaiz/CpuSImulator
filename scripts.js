@@ -301,12 +301,12 @@ function simulateTimeUnit() {
 
     // Determine which process should be running at currentTime
     const scheduleEntry = schedule.find(
-        entry => entry.startTime <= currentTime && entry.endTime > currentTime
+        entry => entry.startTime === currentTime
     );
 
     if (scheduleEntry) {
+        // If the process in the CPU is not the scheduled process, switch
         if (currentProcessId !== scheduleEntry.processId) {
-            // Process switch
             if (currentProcessId !== null) {
                 // Move current process out of CPU
                 const currentProcess = processes.find(p => p.id === currentProcessId);
@@ -323,17 +323,15 @@ function simulateTimeUnit() {
             currentProcessId = scheduleEntry.processId;
         }
     } else {
+        // No process is scheduled to run at this time
         if (currentProcessId !== null) {
-            // No process should be running now, move current process out of CPU
             const currentProcess = processes.find(p => p.id === currentProcessId);
             if (currentProcess.remainingTime === 0) {
-                // Process has completed execution
                 moveToCompleted(currentProcessId);
             } else {
-                // Process was preempted, move back to ready queue
-                moveToReadyQueue(currentProcessId);
+                // Process continues running
+                // No action needed
             }
-            currentProcessId = null;
         }
     }
 
@@ -343,7 +341,7 @@ function simulateTimeUnit() {
         currentProcess.remainingTime--;
         if (currentProcess.remainingTime === 0) {
             // Process has completed execution
-            currentProcess.completionTime = currentTime + 1; // +1 because currentTime increments after this
+            currentProcess.completionTime = currentTime + 1;
             moveToCompleted(currentProcessId);
             currentProcessId = null;
         }
@@ -360,21 +358,38 @@ function simulateTimeUnit() {
         }
     });
 
-    currentTime++;
+    // Wait for animations to complete before moving to the next time unit
+    setTimeout(() => {
+        currentTime++;
 
-    // Check if simulation is over
-    if (currentTime > simulationEndTime) {
-        clearInterval(intervalId);
-        isSimulationRunning = false;
-        // Update completion times for any processes that finished at the last time unit
-        processes.forEach(process => {
-            if (process.remainingTime === 0 && !process.completionTime) {
-                process.completionTime = currentTime;
-            }
-        });
-        // Save the final state
-        saveCurrentState();
-    }
+        // Check if simulation is over
+        if (currentTime > simulationEndTime) {
+            clearInterval(intervalId);
+            isSimulationRunning = false;
+            // Update completion times for any processes that finished at the last time unit
+            processes.forEach(process => {
+                if (process.remainingTime === 0 && !process.completionTime) {
+                    process.completionTime = currentTime;
+                }
+            });
+            // Save the final state
+            saveCurrentState();
+        }
+    }, simulationSpeed / 2);
+}
+
+
+
+function saveCurrentState() {
+    const state = {
+        currentTime: currentTime,
+        processes: JSON.parse(JSON.stringify(processes)),
+        queueHTML: document.getElementById('queue-container').innerHTML,
+        cpuHTML: document.getElementById('cpu-container').innerHTML,
+        completedHTML: document.getElementById('completed-container').innerHTML,
+        currentProcessId: currentProcessId,
+    };
+    simulationStates[currentTime] = state;
 }
 
 function saveCurrentState() {
@@ -394,7 +409,6 @@ function stepBackward() {
     if (currentTime > 0) {
         currentTime--;
 
-        // Restore the previous state
         const prevState = simulationStates[currentTime];
 
         if (prevState) {
@@ -402,24 +416,32 @@ function stepBackward() {
             processes = JSON.parse(JSON.stringify(prevState.processes));
             currentProcessId = prevState.currentProcessId;
 
-            // Restore HTML elements
+            // Restore the HTML content of the containers
             document.getElementById('queue-container').innerHTML = prevState.queueHTML;
             document.getElementById('cpu-container').innerHTML = prevState.cpuHTML;
             document.getElementById('completed-container').innerHTML = prevState.completedHTML;
 
-            // Update remaining time labels
-            processes.forEach(process => {
-                const processEl = document.getElementById(`process-${process.id}`);
-                if (processEl) {
-                    const remainingTimeEl = processEl.querySelector('.remaining-time');
-                    if (remainingTimeEl) {
-                        remainingTimeEl.textContent = `RT: ${formatNumber(process.remainingTime)}`;
-                    }
-                }
-            });
+            // Update process elements to match the restored state
+            updateProcessElements();
         }
     }
 }
+function updateProcessElements() {
+    processes.forEach(process => {
+        const processEl = document.getElementById(`process-${process.id}`);
+        if (processEl) {
+            const remainingTimeEl = processEl.querySelector('.remaining-time');
+            if (remainingTimeEl) {
+                remainingTimeEl.textContent = `RT: ${formatNumber(process.remainingTime)}`;
+            }
+            processEl.dataset.arrivalTime = process.arrivalTime;
+            processEl.dataset.burstTime = process.burstTime;
+            processEl.dataset.priority = process.priority;
+        }
+    });
+}
+
+
 
 function formatNumber(number) {
     if (number >= 1e6) {
@@ -434,16 +456,67 @@ function formatNumber(number) {
 function moveToReadyQueue(processId) {
     const processEl = document.getElementById(`process-${processId}`);
     if (processEl) {
+        // Remove existing animation classes
+        processEl.classList.remove('move-to-cpu', 'move-to-completed', 'move-from-cpu');
         processEl.classList.add('move-to-ready');
         setTimeout(() => {
             processEl.classList.remove('move-to-ready');
             insertProcessIntoReadyQueue(processEl);
         }, simulationSpeed / 2);
     }
-    if (currentProcessId === processId) {
-        currentProcessId = null;
-    }
+    // Do not reset currentProcessId here
+    // It is managed in simulateTimeUnit()
 }
+
+function moveToCPU(processId) {
+    const processEl = document.getElementById(`process-${processId}`);
+    const cpuContainer = document.getElementById('cpu-container');
+
+    if (processEl) {
+        // Remove existing animation classes
+        processEl.classList.remove('move-to-ready', 'move-to-completed', 'move-from-cpu');
+
+        // Remove any existing process from the CPU container
+        while (cpuContainer.firstChild) {
+            const existingProcessEl = cpuContainer.firstChild;
+            existingProcessEl.classList.add('move-from-cpu');
+            setTimeout(() => {
+                existingProcessEl.classList.remove('move-from-cpu');
+                // Move the existing process back to the ready queue
+                insertProcessIntoReadyQueue(existingProcessEl);
+            }, simulationSpeed / 2);
+            cpuContainer.removeChild(existingProcessEl);
+        }
+
+        // Move the new process into the CPU
+        if (processEl.parentElement.id !== 'cpu-container') {
+            processEl.classList.add('move-to-cpu');
+            setTimeout(() => {
+                processEl.classList.remove('move-to-cpu');
+                cpuContainer.appendChild(processEl);
+            }, simulationSpeed / 2);
+        }
+    }
+    // Do not set currentProcessId here
+    // It is managed in simulateTimeUnit()
+}
+
+
+function moveToCompleted(processId) {
+    const processEl = document.getElementById(`process-${processId}`);
+    if (processEl) {
+        // Remove existing animation classes
+        processEl.classList.remove('move-to-ready', 'move-to-cpu', 'move-from-cpu');
+        processEl.classList.add('move-to-completed');
+        setTimeout(() => {
+            processEl.classList.remove('move-to-completed');
+            document.getElementById('completed-container').appendChild(processEl);
+        }, simulationSpeed / 2);
+    }
+    // Do not set currentProcessId here
+    // It is managed in simulateTimeUnit()
+}
+
 
 function insertProcessIntoReadyQueue(processEl) {
     const queueContainer = document.getElementById('queue-container');
