@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CPU Scheduling Simulator with Animation</title>
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css"
+    />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="text-center p-3 bg-primary text-white">
+        <h1>CPU Scheduling Simulator</h1>
+    </header>
+
+    <main class="container my-4">
+        <!-- Algorithm Selection -->
+        <section id="algorithm-selection" class="mb-4">
+            <label for="algorithm" class="font-weight-bold">Select Scheduling Algorithm:</label>
+            <select id="algorithm" class="custom-select w-50">
+                <option value="FCFS">First-Come, First-Served (FCFS)</option>
+                <option value="SJF_NP">Shortest Job First (Non-Preemptive)</option>
+                <option value="SJF_P">Shortest Job First (Preemptive)</option>
+                <option value="RR">Round Robin</option>
+                <option value="Priority_NP">Priority Scheduling (Non-Preemptive)</option>
+                <option value="Priority_P">Priority Scheduling (Preemptive)</option>
+            </select>
+        </section>
+
+        <!-- Time Quantum Input for Round Robin -->
+        <section id="time-quantum-section" class="mb-4 d-none">
+            <label for="time-quantum" class="font-weight-bold">Time Quantum:</label>
+            <input type="number" id="time-quantum" min="1" value="1" class="form-control w-25">
+        </section>
+
+        <!-- Process Input Table -->
+        <section id="process-input" class="mb-4">
+            <h2>Process Inputs</h2>
+            <table id="process-table" class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Process ID</th>
+                        <th>Arrival Time</th>
+                        <th>Burst Time</th>
+                        <th class="priority-header">Priority</th>
+                        <!-- Actions column header is hidden -->
+                        <th style="display: none;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Process rows will be added here -->
+                </tbody>
+            </table>
+            <button id="add-process" class="btn btn-success">Add Process</button>
+        </section>
+
+        <!-- Control Buttons -->
+        <section id="controls" class="mb-4">
+            <button id="run" class="btn btn-primary">Run Simulation</button>
+            <button id="pause" class="btn btn-warning">Pause</button>
+            <button id="resume" class="btn btn-success">Resume</button>
+            <button id="step-forward" class="btn btn-info">Step Forward</button>
+            <button id="step-backward" class="btn btn-info">Step Backward</button>
+            <button id="reset" class="btn btn-secondary">Reset</button>
+            <!-- Add this line where the control buttons are located in the HTML file -->
+<button id="add-test-data" class="btn btn-info">Add Test Data</button>
+
+        </section>
+
+        <!-- Visualization Section -->
+        <section id="visualization" class="mt-5">
+            <h2>Visualization</h2>
+            <div class="d-flex justify-content-between align-items-start">
+                <!-- Time Counter -->
+                <div id="time-counter" class="text-center">
+                    <h3>Time: <span id="current-time">0</span></h3>
+                </div>
+
+                <!-- Ready Queue -->
+                <div id="ready-queue" class="text-center">
+                    <h3><i class="bi bi-list"></i> Ready Queue</h3>
+                    <div id="queue-container" class="d-flex flex-row align-items-center">
+                        <!-- Process elements will be appended here -->
+                    </div>
+                </div>
+
+                <!-- CPU -->
+                <div id="cpu" class="text-center">
+                    <h3><i class="bi bi-cpu"></i> CPU</h3>
+                    <div id="cpu-container" class="border border-primary rounded p-2" style="height: 100px; width: 100px;">
+                        <!-- Current process will be displayed here -->
+                    </div>
+                </div>
+
+                <!-- Completed Processes -->
+                <div id="completed-processes" class="text-center">
+                    <h3><i class="bi bi-check-circle"></i> Completed Processes</h3>
+                    <div id="completed-container" class="d-flex flex-row align-items-center">
+                        <!-- Completed processes will be moved here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Output Section -->
+        <section id="output" class="mt-5">
+            <h2>Simulation Results</h2>
+            <!-- Gantt Chart Placeholder -->
+            <div id="gantt-chart" class="mb-4"></div>
+            <!-- Metrics Table -->
+            <table id="metrics-table" class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Process ID</th>
+                        <th>Waiting Time</th>
+                        <th>Turnaround Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Metrics rows will be added here -->
+                </tbody>
+            </table>
+            <!-- Averages -->
+            <div id="averages">
+                <p id="average-waiting-time"></p>
+                <p id="average-turnaround-time"></p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="text-center p-3 bg-light">
+        <p>&copy; 2024 CPU Scheduling Simulator</p>
+    </footer>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+    ></script>
+    <script
+      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+    ></script>
+    <!-- Custom JS -->
+    <script src="scripts.js"></script>
+    <div id="processes-container" style="display: none;"></div>
+
+</body>
+</html>
